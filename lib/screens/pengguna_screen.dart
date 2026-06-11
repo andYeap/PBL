@@ -1,4 +1,6 @@
+import 'package:admin_pegawai/models/pengguna_model.dart';
 import 'package:admin_pegawai/providers/auth_provider.dart';
+import 'package:admin_pegawai/screens/pegawai_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:admin_pegawai/utils/app_colors.dart';
@@ -107,21 +109,54 @@ class _PenggunaScreenState extends State<PenggunaScreen> {
               icon: Icons.business_center,
               title: "Pegawai",
               subtitle: "Terdapat 80 Pegawai",
-              onTap: () {},
+              onTap: () {
+                PenggunaModel penggunaModel = PenggunaModel(
+                  tipe: "Pegawai",
+                  role: "admin-pegawai",
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PegawaiScreen(penggunaModel: penggunaModel),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
             _buildMenuCard(
               icon: Icons.co_present,
               title: "Dosen",
               subtitle: "Terdapat 80 Dosen",
-              onTap: () {},
+              onTap: () {
+                PenggunaModel penggunaModel = PenggunaModel(
+                  tipe: "Dosen",
+                  role: "dosen",
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PegawaiScreen(penggunaModel: penggunaModel),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
             _buildMenuCard(
               icon: Icons.people,
               title: "Mahasiswa",
               subtitle: "Terdapat 1024 Mahasiswa",
-              onTap: () {},
+              onTap: () {
+                PenggunaModel penggunaModel = PenggunaModel(
+                  tipe: "Mahasiswa",
+                  role: "mahasiswa",
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PegawaiScreen(penggunaModel: penggunaModel),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 30),
           ],

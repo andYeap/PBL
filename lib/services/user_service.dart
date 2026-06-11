@@ -1,4 +1,5 @@
 import 'package:admin_pegawai/models/api_response.dart';
+import 'package:admin_pegawai/models/paginate.dart';
 import 'package:admin_pegawai/models/user_models.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
@@ -59,6 +60,30 @@ class UserService {
       return null;
     } catch (e) {
       debugPrint("Error pagination: $e");
+      return null;
+    }
+  }
+
+  Future<List<UserResponse>?> getDataPengguna(String role) async {
+    try {
+      final response = await _dio.get("/api/users/roles/$role");
+
+      if (response.statusCode == 200) {
+        final data = ApiResponse<Paginate<List<UserResponse>>>.fromJson(
+          response.data,
+          (json) => Paginate.fromJson(
+            json,
+            (item) => (item as List)
+                .map(
+                  (item) => UserResponse.fromJson(item as Map<String, dynamic>),
+                )
+                .toList(),
+          ),
+        );
+        return data.data!.items;
+      }
+    } catch (e) {
+      debugPrint(e.toString());
       return null;
     }
   }

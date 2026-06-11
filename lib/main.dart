@@ -12,6 +12,7 @@ import 'package:admin_pegawai/screens/detail_screen.dart';
 import 'package:admin_pegawai/screens/detail_tahun_akademik_screen.dart';
 import 'package:admin_pegawai/screens/kelas_screen.dart';
 import 'package:admin_pegawai/screens/kurikulum_screen.dart';
+import 'package:admin_pegawai/screens/pegawai_screen.dart';
 import 'package:admin_pegawai/screens/reset_screen.dart';
 import 'package:admin_pegawai/screens/super_dashboard_screen.dart';
 import 'package:admin_pegawai/screens/tahun_akademik_screen.dart';

@@ -1,6 +1,7 @@
 import 'package:admin_pegawai/utils/token_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -32,6 +33,17 @@ class ApiClient {
           }
           return handler.next(options);
         },
+      ),
+    );
+
+    dio.interceptors.add(
+      PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseBody: true,
+        responseHeader: false,
+        error: true,
+        compact: true,
       ),
     );
   }

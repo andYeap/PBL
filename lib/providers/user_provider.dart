@@ -84,6 +84,23 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> getDataPengguna(String role) async {
+    _isLoading = true;
+    _listUser = [];
+    notifyListeners();
+
+    try {
+      _listUser = (await _userService.getDataPengguna(role))!;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Gagal memuat data presensi: $e");
+      _listUser = [];
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearUserData() {
     _data = null;
     _profileImage = null;

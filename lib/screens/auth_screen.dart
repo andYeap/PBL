@@ -99,6 +99,14 @@ class _LoginFormState extends State<LoginForm> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _emailController.text = "tim1@admin.com";
+    _passwordController.text = "pass#tim1";
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
