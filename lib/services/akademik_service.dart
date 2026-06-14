@@ -1,6 +1,6 @@
-import 'package:admin_pegawai/models/akademik_models.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import '../models/akademik_models.dart';
 import 'api_client.dart';
 
 class AkademikService {
@@ -20,26 +20,31 @@ class AkademikService {
     }
   }
 
-  Future<List<Kurikulum>> fetchKurikulum() async {
+  Future<KurikulumPaginationResponse?> fetchKurikulum(
+    int page,
+    int perPage,
+  ) async {
     try {
-      final response = await _dio.get("/api/kurikulum");
+      final response = await _dio.get(
+        "/api/kurikulum",
+        queryParameters: {"page": page, "perPage": perPage},
+      );
       if (response.statusCode == 200 && response.data["success"] == true) {
-        final List<dynamic> data = response.data["data"]["items"];
-        return data.map((item) => Kurikulum.fromJson(item)).toList();
+        return KurikulumPaginationResponse.fromJson(response.data);
       }
-      return [];
+      return null;
     } catch (e) {
       debugPrint("Error fetching kurikulum: $e");
-      return [];
+      return null;
     }
   }
 
-  Future<List<Prodi>> fetchProdi() async {
+  Future<List<ProdiResponse>> fetchProdi() async {
     try {
       final response = await _dio.get("/api/prodi");
       if (response.statusCode == 200 && response.data["success"] == true) {
         final List<dynamic> data = response.data["data"]["items"];
-        return data.map((item) => Prodi.fromJson(item)).toList();
+        return data.map((item) => ProdiResponse.fromJson(item)).toList();
       }
       return [];
     } catch (e) {
@@ -48,17 +53,22 @@ class AkademikService {
     }
   }
 
-  Future<List<Kelas>> fetchKelas() async {
+  Future<KelasPaginationResponse?> fetchKelasPagination(
+    int page,
+    int perPage,
+  ) async {
     try {
-      final response = await _dio.get("/api/kelas");
+      final response = await _dio.get(
+        "/api/kelas",
+        queryParameters: {"page": page, "perPage": perPage},
+      );
       if (response.statusCode == 200 && response.data["success"] == true) {
-        final List<dynamic> data = response.data["data"];
-        return data.map((item) => Kelas.fromJson(item)).toList();
+        return KelasPaginationResponse.fromJson(response.data);
       }
-      return [];
+      return null;
     } catch (e) {
-      debugPrint("Error fetching kelas: $e");
-      return [];
+      debugPrint("Error fetching kelas pagination: $e");
+      return null;
     }
   }
 
@@ -146,6 +156,34 @@ class AkademikService {
       return response.statusCode == 200 && response.data["success"] == true;
     } catch (e) {
       debugPrint("Error deleting mata kuliah: $e");
+      return false;
+    }
+  }
+
+  Future<bool> updateTahunAkademik(TahunAkademik ta) async {
+    try {
+      final response = await _dio.put(
+        "/api/tahun-akademik/${ta.id}",
+        data: {
+          "tipee_semester": ta.tipeSemester,
+          "tahun_awal": ta.tahunAwal,
+          "tahun_akhir": ta.tahunAkhir,
+          "status": ta.status,
+        },
+      );
+      return response.statusCode == 200 && response.data["success"] == true;
+    } catch (e) {
+      debugPrint("Error updating tahun akademik: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deleteTahunAkademik(int id) async {
+    try {
+      final response = await _dio.delete("/api/tahun-akademik/$id");
+      return response.statusCode == 200 && response.data["success"] == true;
+    } catch (e) {
+      debugPrint("Error deleting tahun akademik: $e");
       return false;
     }
   }

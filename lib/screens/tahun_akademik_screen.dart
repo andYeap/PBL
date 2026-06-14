@@ -1,8 +1,8 @@
 import 'package:admin_pegawai/providers/akademik_provider.dart';
-import 'package:admin_pegawai/providers/user_provider.dart';
+import 'package:admin_pegawai/screens/tahun_akademik_detail_screen.dart';
+import 'package:admin_pegawai/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:admin_pegawai/utils/app_colors.dart';
 import 'package:provider/provider.dart';
 
 class TahunAkademikScreen extends StatefulWidget {
@@ -13,58 +13,37 @@ class TahunAkademikScreen extends StatefulWidget {
 }
 
 class _TahunAkademikScreenState extends State<TahunAkademikScreen> {
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      if (!mounted) return;
-      context.read<UserProvider>().fetchDashboardUserData();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AkademikProvider>(context, listen: false).fetchAkademikData();
     });
   }
 
-  String _formatDisplayDate(String dateStr) {
-    try {
-      DateTime dateTime = DateTime.parse(dateStr);
-      List<String> months = [
-        'JAN',
-        'FEB',
-        'MAR',
-        'APR',
-        'MEI',
-        'JUN',
-        'JUL',
-        'AGU',
-        'SEP',
-        'OKT',
-        'NOV',
-        'DES',
-      ];
-      return "${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}";
-    } catch (_) {
-      return dateStr;
-    }
-  }
-
-  String _getTahunAkademikLabel(int id) {
-    String idStr = id.toString();
-    if (idStr.length >= 4) {
-      int startYear = int.parse(idStr.substring(0, 4));
-      return "$startYear-${startYear + 1}";
-    }
-    return "$id";
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final userProvider = context.watch<AkademikProvider>();
-
-    final filteredList = userProvider.listTahunAkademik.where((item) {
-      final label = _getTahunAkademikLabel(item.id).toLowerCase();
-      final tipe = item.tipeSemester.toLowerCase();
-      return label.contains(_searchQuery.toLowerCase()) ||
-          tipe.contains(_searchQuery.toLowerCase());
+    final filteredList = userProvider.listTahunAkademik.where((ta) {
+      final thnAwal = ta.tahunAwal.toString().split('-')[0];
+      final thnAkhir = ta.tahunAkhir.toString().split('-')[0];
+      final tipe = ta.tipeSemester.toString().toLowerCase();
+      final period = "Tahun $thnAwal/$thnAkhir $tipe".toLowerCase();
+      return period.contains(_searchQuery);
     }).toList();
 
     return Scaffold(
@@ -127,10 +106,10 @@ class _TahunAkademikScreenState extends State<TahunAkademikScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "Akademik > Detail Kurikulum",
+                    "Akademik > Detail Kurikulum", // Sesuai teks di gambar pertama
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppColors.primaryColor,
+                      color: Colors.black54,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -144,7 +123,7 @@ class _TahunAkademikScreenState extends State<TahunAkademikScreen> {
                     ),
                   ),
                   Text(
-                    "Kumpulan tahun akademik yang berlangsung",
+                    "Kumpulan tahun akademik sedang berlangsung",
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       color: Colors.black54,
@@ -164,11 +143,7 @@ class _TahunAkademikScreenState extends State<TahunAkademikScreen> {
                       ],
                     ),
                     child: TextField(
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
+                      controller: _searchController,
                       decoration: InputDecoration(
                         hintText: "Cari ...",
                         hintStyle: GoogleFonts.poppins(
@@ -187,33 +162,58 @@ class _TahunAkademikScreenState extends State<TahunAkademikScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredList.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = filteredList[index];
-                      final String label = _getTahunAkademikLabel(item.id);
-                      final String tipe = item.tipeSemester.toUpperCase();
-                      final String mulai = _formatDisplayDate(item.tahunAwal);
-                      final String selesai = _formatDisplayDate(
-                        item.tahunAkhir,
-                      );
+                  filteredList.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 40),
+                            child: Text(
+                              "Data tahun akademik tidak ditemukan",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredList.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final ta = filteredList[index];
 
-                      return _buildAcademicYearCard(
-                        title: "Tahun Akademik $label ($tipe)",
-                        startDate: mulai,
-                        endDate: selesai,
-                        onViewTap: () => Navigator.pushNamed(
-                          context,
-                          "/detail-tahun-akademik",
-                          arguments: {'startDate': mulai, 'endDate': selesai},
+                            final thnAwal = ta.tahunAwal.toString().split(
+                              '-',
+                            )[0];
+                            final thnAkhir = ta.tahunAkhir.toString().split(
+                              '-',
+                            )[0];
+                            // Kapitalisasi awal kata (Ganjil/Genap)
+                            final tipeSemester =
+                                ta.tipeSemester.toString().isNotEmpty
+                                ? '${ta.tipeSemester.toString()[0].toUpperCase()}${ta.tipeSemester.toString().substring(1).toLowerCase()}'
+                                : '';
+
+                            return _buildTahunAkademikCard(
+                              title: "Tahun $thnAwal/$thnAkhir $tipeSemester",
+                              tahunMulai: ta.tahunAwal,
+                              tahunSelesai: ta.tahunAkhir,
+                              status: ta.status,
+                              onTap: () {
+                                userProvider.setSelectedTahunAkademik(ta);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const TahunAkademikDetailScreen(),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                   const SizedBox(height: 30),
                 ],
               ),
@@ -221,118 +221,118 @@ class _TahunAkademikScreenState extends State<TahunAkademikScreen> {
     );
   }
 
-  Widget _buildAcademicYearCard({
+  Widget _buildTahunAkademikCard({
     required String title,
-    required String startDate,
-    required String endDate,
-    required VoidCallback onViewTap,
+    required String tahunMulai,
+    required String tahunSelesai,
+    required String status,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
+    final isAktif = status.toLowerCase() == 'aktif';
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isAktif
+                        ? const Color(0xFF2ECC71)
+                        : const Color(0xFFE74C3C),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                   child: Text(
-                    title,
+                    isAktif ? "Aktif" : "Non Aktif",
                     style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 28,
-                  child: ElevatedButton(
-                    onPressed: onViewTap,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      "Lihat",
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+            const SizedBox(height: 12),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF2F2F2)),
+            const SizedBox(height: 12),
+            Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Tahun Mulai",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.black54,
-                      ),
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    "Tahun Mulai",
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.black54,
                     ),
-                    Text(
-                      ": $startDate",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Tahun Selesai",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    Text(
-                      ": $endDate",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                Text(
+                  ":   $tahunMulai",
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    "Tahun Selesai",
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
+                Text(
+                  ":   $tahunSelesai",
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

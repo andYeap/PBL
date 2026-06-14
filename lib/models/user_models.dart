@@ -11,16 +11,16 @@ class UserResponse {
     required this.name,
     required this.email,
     required this.roleName,
-    required this.detailId,
-    required this.imageUrl,
+    this.imageUrl,
+    this.detailId,
   });
 
   factory UserResponse.fromJson(Map<String, dynamic> json) {
     return UserResponse(
-      id: json["id"],
-      name: json["name"],
-      email: json["email"],
-      roleName: json["role_name"],
+      id: json["id"] ?? '',
+      name: json["name"] ?? '',
+      email: json["email"] ?? '',
+      roleName: json["role_name"] ?? '',
       detailId: json["detail_id"]?.toString(),
       imageUrl: json["image_url"],
     );

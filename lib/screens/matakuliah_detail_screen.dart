@@ -1,121 +1,96 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import 'package:admin_pegawai/providers/akademik_provider.dart';
-import 'package:admin_pegawai/utils/app_colors.dart';
+import '../models/mata_kuliah_model.dart'; // <--- Pastikan import model ini ada
 
 class MatakuliahDetailScreen extends StatelessWidget {
-  const MatakuliahDetailScreen({super.key});
+  final MataKuliah mataKuliah; // Menggunakan tipe model objek asli
+  final String namaKurikulum;
 
-  String _formatTitle(String text) {
-    if (text.isEmpty) return text;
-    return text
-        .replaceAll('-', ' ')
-        .split(' ')
-        .map((word) {
-          if (word.isEmpty) return word;
-          return word[0].toUpperCase() + word.substring(1);
-        })
-        .join(' ');
-  }
+  const MatakuliahDetailScreen({
+    super.key,
+    required this.mataKuliah,
+    required this.namaKurikulum,
+  });
 
-  void _showDeleteDialog(BuildContext context, AkademikProvider provider) {
+  void _showHapusDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
+      builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.redAccent,
-                  size: 60,
+                  Icons.warning_rounded,
+                  color: Color(0xFFE74C3C),
+                  size: 64,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   "Hapus Matakuliah ini?",
                   style: GoogleFonts.poppins(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   "Data akan dihapus secara permanen!",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 14,
                     color: Colors.black54,
                   ),
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () async {
-                      Navigator.pop(dialogContext); // Tutup dialog
-                      bool success = await provider.removeMataKuliah();
-                      if (context.mounted) {
-                        if (success) {
-                          Navigator.pop(context); // Kembali ke halaman list
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Mata kuliah berhasil dihapus"),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Gagal menghapus mata kuliah"),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: Text(
-                      "Hapus",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(color: Colors.black38),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          "Batal",
+                          style: GoogleFonts.poppins(color: Colors.black87),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.black),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE74C3C),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          "Hapus",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: Text(
-                      "Batal",
-                      style: GoogleFonts.poppins(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -127,234 +102,230 @@ class MatakuliahDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AkademikProvider>();
-    final mk = provider.selectedMataKuliah;
-    final kurikulumNama = provider.selectedJurikulum?.nama ?? '-';
-
-    if (mk == null) {
-      return const Scaffold(body: Center(child: Text("Data tidak ditemukan")));
-    }
-
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
+      backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.backgroundColor,
+        backgroundColor: const Color(0xFFF4F7FB),
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
-            Image.asset(
-              'assets/logo/logo.png',
-              height: 40,
-              fit: BoxFit.contain,
-            ),
+            const Icon(Icons.school, color: Color(0xFF1E3A8A), size: 40),
             const SizedBox(width: 8),
             Text(
               'SABAR',
               style: GoogleFonts.poppins(
-                color: AppColors.primaryColor,
+                color: const Color(0xFF1E3A8A),
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontSize: 22,
               ),
             ),
           ],
         ),
       ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () => Navigator.pop(context),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 16,
+                    color: Colors.black87,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Kembali",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Akademik > matakuliah > detail matakuliah",
+              style: GoogleFonts.poppins(fontSize: 11, color: Colors.black54),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "Detail Matakuliah",
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Informasi lengkap matakuliah",
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
+            ),
+            const SizedBox(height: 24),
+
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF26428B),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      "Informasi Matakuliah",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        // --- PERBAIKAN DI SINI: Menggunakan tanda titik (.) objek ---
+                        _buildDetailRow("Kode MK", mataKuliah.kode),
+                        const Divider(),
+                        _buildDetailRow("Nama MK", mataKuliah.name),
+                        const Divider(),
+                        _buildDetailRow("SKS", mataKuliah.sks.toString()),
+                        const Divider(),
+                        _buildDetailRow("Kurikulum", namaKurikulum),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            Row(
               children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.arrow_back_ios,
-                        size: 14,
-                        color: Colors.black87,
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        "/matakuliah-edit",
+                        arguments: {
+                          'mataKuliah': mataKuliah,
+                          'namaKurikulum': namaKurikulum,
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF26428B),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Kembali",
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.edit_square,
+                          color: Colors.white,
+                          size: 18,
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Edit",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _showHapusDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE74C3C),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Akademik > matakuliah > Detail matakuliah",
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Colors.black45,
-                  ),
-                ),
-                Text(
-                  "Detail Matakuliah",
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "Informasi Matakuliah",
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Card Rincian Detail Data
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.black12),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildDetailRow("Kode MK", mk.kode),
-                      const Divider(height: 1, color: Colors.black12),
-                      _buildDetailRow("Nama MK", _formatTitle(mk.name)),
-                      const Divider(height: 1, color: Colors.black12),
-                      _buildDetailRow("SKS", mk.sks.toString()),
-                      const Divider(height: 1, color: Colors.black12),
-                      _buildDetailRow("Kurikulum", _formatTitle(kurikulumNama)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Grup Tombol Aksi Kerja
-                Row(
-                  children: [
-                    Expanded(
-                      child:
-                          ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1A3D84),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ).button(
-                            onPressed: () => Navigator.pushNamed(
-                              context,
-                              "/matakuliah-edit",
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.edit_document,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Edit",
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child:
-                          ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE54A3B),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ).button(
-                            onPressed: () =>
-                                _showDeleteDialog(context, provider),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Hapus",
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.delete, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Hapus",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
-          ),
-          if (provider.isLoading)
-            Container(
-              color: Colors.black12,
-              child: const Center(
-                child: CircularProgressIndicator(color: AppColors.primaryColor),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 100,
             child: Text(
               label,
               style: GoogleFonts.poppins(
-                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          const Text(" :    "),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
                 color: Colors.black87,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          const Text(" :   ", style: TextStyle(color: Colors.black87)),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black),
-            ),
-          ),
         ],
       ),
     );
-  }
-}
-
-// Ekstensi helper untuk mempersingkat sintaks deklarasi ButtonStyle
-extension on ButtonStyle {
-  Widget button({required VoidCallback onPressed, required Widget child}) {
-    return ElevatedButton(style: this, onPressed: onPressed, child: child);
   }
 }

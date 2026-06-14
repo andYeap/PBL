@@ -1,6 +1,10 @@
 import 'package:admin_pegawai/providers/akademik_provider.dart';
 import 'package:admin_pegawai/providers/auth_provider.dart';
+import 'package:admin_pegawai/providers/kurikulum_provider.dart';
+import 'package:admin_pegawai/providers/mata_kuliah_provider.dart';
 import 'package:admin_pegawai/providers/user_provider.dart';
+import 'package:admin_pegawai/providers/prodi_provider.dart';
+import 'package:admin_pegawai/providers/jurusan_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:admin_pegawai/utils/app_colors.dart';
@@ -21,6 +25,9 @@ class _AkademikScreenState extends State<AkademikScreen> {
       if (!mounted) return;
       context.read<UserProvider>().fetchDashboardUserData();
       context.read<AkademikProvider>().fetchAkademikData();
+      context.read<ProdiProvider>().fetchProdiData();
+      context.read<JurusanProvider>().fetchJurusanData();
+      context.read<MataKuliahProvider>().fetchInitialData();
     });
   }
 
@@ -41,10 +48,17 @@ class _AkademikScreenState extends State<AkademikScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = context.watch<AkademikProvider>();
-    final int totalTahunAkademik = userProvider.listTahunAkademik.length;
-    final int totalKurikulum = userProvider.listKurikulum.length;
-    final int totalMataKuliah = userProvider.listMataKuliah.length;
+    final akademikProvider = context.watch<AkademikProvider>();
+    final prodiProvider = context.watch<ProdiProvider>();
+    final jurusanProvider = context.watch<JurusanProvider>();
+    final kurikulumProvider = context.watch<KurikulumProvider>();
+    final mataKuliahProvider = context.watch<MataKuliahProvider>();
+
+    final int totalTahunAkademik = akademikProvider.listTahunAkademik.length;
+    final int totalKurikulum = kurikulumProvider.listKurikulum.length;
+    final int totalMataKuliah = mataKuliahProvider.totalItems;
+    final int totalProdi = prodiProvider.listProdi.length;
+    final int totalJurusan = jurusanProvider.listJurusan.length;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
@@ -144,7 +158,7 @@ class _AkademikScreenState extends State<AkademikScreen> {
                 title: "KHS",
                 subtitle: "Terdapat 102 KHS",
                 icon: Icons.description_outlined,
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, "/khs"),
               ),
               const SizedBox(height: 16),
 
@@ -158,17 +172,21 @@ class _AkademikScreenState extends State<AkademikScreen> {
 
               _buildMenuTile(
                 title: "Jurusan",
-                subtitle: "Terdapat 5 Jurusan",
+                subtitle: totalJurusan > 0
+                    ? "Terdapat $totalJurusan Jurusan"
+                    : "Terdapat 5 Jurusan",
                 icon: Icons.school_outlined,
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, "/jurusan"),
               ),
               const SizedBox(height: 16),
 
               _buildMenuTile(
                 title: "Prodi",
-                subtitle: "Terdapat 48 Prodi",
+                subtitle: totalProdi > 0
+                    ? "Terdapat $totalProdi Prodi"
+                    : "Terdapat 48 Prodi",
                 icon: Icons.workspace_premium_outlined,
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, "/prodi"),
               ),
               const SizedBox(height: 30),
             ],
