@@ -1,5 +1,6 @@
 class TahunAkademik {
-  final int id;
+  final dynamic
+  id;
   final String tipeSemester;
   final String tahunAwal;
   final String tahunAkhir;
@@ -15,11 +16,21 @@ class TahunAkademik {
 
   factory TahunAkademik.fromJson(Map<String, dynamic> json) {
     return TahunAkademik(
-      id: json["id"] ?? 0,
+      id: json["id"],
       tipeSemester: json["tipee_semester"] ?? json["tipe_semester"] ?? '',
       tahunAwal: json["tahun_awal"] ?? '',
       tahunAkhir: json["tahun_akhir"] ?? '',
       status: json["status"] ?? '',
     );
+  }
+
+  // Tambahkan fungsi toJson agar konversi payload ke service lebih rapi
+  Map<String, dynamic> toJson() {
+    return {
+      "tipe_semester": tipeSemester,
+      "tahun_awal": tahunAwal,
+      "tahun_akhir": tahunAkhir,
+      "status": status,
+    };
   }
 }

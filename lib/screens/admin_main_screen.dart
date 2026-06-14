@@ -1,7 +1,7 @@
 import 'package:admin_pegawai/screens/akademik_screen.dart';
 import 'package:admin_pegawai/screens/admin_dashboard_screen.dart';
 import 'package:admin_pegawai/screens/pengguna_screen.dart';
-import 'package:admin_pegawai/screens/account_screen.dart'; // Menghubungkan ke account_screen.dart sesuai struktur folder
+import 'package:admin_pegawai/screens/profile_screen.dart';
 import 'package:admin_pegawai/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,11 +16,14 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const AdminDashboard(),
+  List<Widget> get _pages => [
+    AdminDashboard(
+      onSelengkapnyaTap: () =>
+          _onItemTapped(1),
+    ),
     const AkademikScreen(),
     const PenggunaScreen(),
-    const AccountScreen(),
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -32,7 +35,8 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      // Menggunakan IndexedStack agar posisi navbar tetap di bawah dan halaman di-render dengan benar
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -45,8 +49,7 @@ class _AdminScreenState extends State<AdminScreen> {
           ],
         ),
         child: SafeArea(
-          top:
-              false,
+          top: false,
           child: Container(
             height: 70,
             padding: const EdgeInsets.symmetric(horizontal: 12),

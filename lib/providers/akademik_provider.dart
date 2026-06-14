@@ -7,7 +7,7 @@ class AkademikProvider with ChangeNotifier {
 
   bool _isLoading = false;
 
-  // Hanya menyisakan state yang BELUM dibuatkan provider terpisah
+  // Menyisakan state yang BELUM dibuatkan provider terpisah
   List<TahunAkademik> _listTahunAkademik = [];
   List<Nilai> _listNilai = [];
 
@@ -23,7 +23,7 @@ class AkademikProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Hanya memuat data yang tersisa di provider ini
+  /// Fungsi untuk menarik data segar murni dari server API
   Future<void> fetchAkademikData() async {
     _isLoading = true;
     notifyListeners();
@@ -38,17 +38,21 @@ class AkademikProvider with ChangeNotifier {
       _listNilai = responses[1] as List<Nilai>;
     } catch (e) {
       debugPrint("Error fetching akademik data: $e");
+    } finally {
+      // Amankan loading state menggunakan block finally agar tidak stuck
+      _isLoading = false;
+      notifyListeners();
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
+  /// Fungsi Edit yang sudah diperbaiki agar sinkron penuh dengan server backend
   Future<bool> editTahunAkademik(String tahunAwal, String tahunAkhir) async {
     if (selectedTahunAkademik == null) return false;
+
     _isLoading = true;
     notifyListeners();
 
+    // Mengonstruksi objek baru dengan menyuntikkan input modifikasi dari form teks UI
     final updatedData = TahunAkademik(
       id: selectedTahunAkademik!.id,
       tipeSemester: selectedTahunAkademik!.tipeSemester,
@@ -57,37 +61,58 @@ class AkademikProvider with ChangeNotifier {
       status: selectedTahunAkademik!.status,
     );
 
-    bool isSuccess = await _akademikService.updateTahunAkademik(updatedData);
-    if (isSuccess) {
-      selectedTahunAkademik = updatedData;
-      int idx = _listTahunAkademik.indexWhere(
-        (element) => element.id == updatedData.id,
-      );
-      if (idx != -1) _listTahunAkademik[idx] = updatedData;
-    }
+    try {
+      bool isSuccess = await _akademikService.updateTahunAkademik(updatedData);
 
-    _isLoading = false;
-    notifyListeners();
-    return isSuccess;
+      if (isSuccess) {
+        // Jika server sukses mengubah data, sinkronisasikan objek selected lokal saat ini
+        selectedTahunAkademik = updatedData;
+
+        // LANGKAH KRUSIAL: Tarik data murni terbaru dari database server
+        // Ini menjamin data UI di dashboard dan halaman list 100% akurat dengan backend
+        final freshData = await _akademikService.fetchTahunAkademik();
+        if (freshData.isNotEmpty) {
+          _listTahunAkademik = freshData;
+        }
+
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error inside provider editTahunAkademik: $e");
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
+  /// Fungsi Hapus yang sudah distandarisasi penanganan loading-nya
   Future<bool> removeTahunAkademik() async {
     if (selectedTahunAkademik == null) return false;
+
     _isLoading = true;
     notifyListeners();
 
-    bool isSuccess = await _akademikService.deleteTahunAkademik(
-      selectedTahunAkademik!.id,
-    );
-    if (isSuccess) {
-      _listTahunAkademik.removeWhere(
-        (element) => element.id == selectedTahunAkademik!.id,
+    try {
+      bool isSuccess = await _akademikService.deleteTahunAkademik(
+        selectedTahunAkademik!.id,
       );
-      selectedTahunAkademik = null;
-    }
 
-    _isLoading = false;
-    notifyListeners();
-    return isSuccess;
+      if (isSuccess) {
+        _listTahunAkademik.removeWhere(
+          (element) => element.id == selectedTahunAkademik!.id,
+        );
+        selectedTahunAkademik = null;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error inside provider removeTahunAkademik: $e");
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

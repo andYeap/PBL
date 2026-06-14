@@ -1,5 +1,7 @@
 import 'package:admin_pegawai/providers/akademik_provider.dart';
 import 'package:admin_pegawai/providers/auth_provider.dart';
+import 'package:admin_pegawai/providers/kelas_provider.dart';
+import 'package:admin_pegawai/providers/khs_provider.dart';
 import 'package:admin_pegawai/providers/kurikulum_provider.dart';
 import 'package:admin_pegawai/providers/mata_kuliah_provider.dart';
 import 'package:admin_pegawai/providers/user_provider.dart';
@@ -28,6 +30,9 @@ class _AkademikScreenState extends State<AkademikScreen> {
       context.read<ProdiProvider>().fetchProdiData();
       context.read<JurusanProvider>().fetchJurusanData();
       context.read<MataKuliahProvider>().fetchInitialData();
+      context.read<KurikulumProvider>().fetchInitialData();
+      context.read<KelasProvider>().fetchInitialData();
+      context.read<KhsProvider>().fetchKhsData();
     });
   }
 
@@ -53,12 +58,16 @@ class _AkademikScreenState extends State<AkademikScreen> {
     final jurusanProvider = context.watch<JurusanProvider>();
     final kurikulumProvider = context.watch<KurikulumProvider>();
     final mataKuliahProvider = context.watch<MataKuliahProvider>();
+    final kelasProvider = context.watch<KelasProvider>();
+    final khsProvider = context.watch<KhsProvider>();
 
     final int totalTahunAkademik = akademikProvider.listTahunAkademik.length;
     final int totalKurikulum = kurikulumProvider.listKurikulum.length;
     final int totalMataKuliah = mataKuliahProvider.totalItems;
     final int totalProdi = prodiProvider.listProdi.length;
     final int totalJurusan = jurusanProvider.listJurusan.length;
+    final int totalKelas = kelasProvider.listKelas.length;
+    final int totalKHS = khsProvider.listKhs.length;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
@@ -148,7 +157,9 @@ class _AkademikScreenState extends State<AkademikScreen> {
 
               _buildMenuTile(
                 title: "Kelas",
-                subtitle: "Tersedia 21 Kelas",
+                subtitle: totalKelas > 0
+                    ? "Tersedia $totalKelas Kelas"
+                    : "Tersedia 0 Kelas",
                 icon: Icons.co_present_outlined,
                 onTap: () => Navigator.pushNamed(context, "/kelas"),
               ),
@@ -156,17 +167,11 @@ class _AkademikScreenState extends State<AkademikScreen> {
 
               _buildMenuTile(
                 title: "KHS",
-                subtitle: "Terdapat 102 KHS",
+                subtitle: totalKHS > 0
+                    ? "Terdapat $totalKHS KHS"
+                    : "Terdapat 0 KHS",
                 icon: Icons.description_outlined,
                 onTap: () => Navigator.pushNamed(context, "/khs"),
-              ),
-              const SizedBox(height: 16),
-
-              _buildMenuTile(
-                title: "Nilai",
-                subtitle: "Terdapat 102 Nilai",
-                icon: Icons.drive_file_rename_outline_rounded,
-                onTap: () {},
               ),
               const SizedBox(height: 16),
 

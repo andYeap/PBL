@@ -3,6 +3,7 @@ import 'package:admin_pegawai/screens/tahun_akademik_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:admin_pegawai/utils/app_colors.dart';
 
 class TahunAkademikDetailScreen extends StatelessWidget {
   const TahunAkademikDetailScreen({super.key});
@@ -27,7 +28,7 @@ class TahunAkademikDetailScreen extends StatelessWidget {
               'SABAR',
               style: GoogleFonts.poppins(
                 textStyle: const TextStyle(
-                  color: Color(0xFF1A365D),
+                  color: AppColors.primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -117,7 +118,7 @@ class TahunAkademikDetailScreen extends StatelessWidget {
                       Container(
                         width: double.infinity,
                         decoration: const BoxDecoration(
-                          color: Color(0xFF1A365D),
+                          color: AppColors.primaryColor,
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(8),
                             topRight: Radius.circular(8),
@@ -188,13 +189,12 @@ class TahunAkademikDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Tombol Edit Sesuai Gambar Kedua
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A365D),
+                      backgroundColor: AppColors.primaryColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),

@@ -1,140 +1,62 @@
-import 'package:admin_pegawai/models/user_models.dart';
-import 'package:admin_pegawai/providers/auth_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:admin_pegawai/providers/user_provider.dart';
 import 'package:admin_pegawai/providers/akademik_provider.dart';
+import 'package:admin_pegawai/providers/kurikulum_provider.dart';
 import 'package:admin_pegawai/utils/app_colors.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final VoidCallback? onSelengkapnyaTap;
+
+  const AdminDashboard({super.key, this.onSelengkapnyaTap});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: DashboardPage());
-  }
-}
+  String _selectedAkademikCategory = 'Tahun Akademik';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  final PageController _academicPageController = PageController();
-  int _currentAcademicPage = 0;
+  // Menyisakan hanya kategori yang valid digunakan
+  final List<String> _akademikCategories = ['Tahun Akademik', 'Kurikulum'];
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      if (!mounted) return;
-      context.read<UserProvider>().profile();
+    initializeDateFormatting('id_ID', null);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<UserProvider>().fetchDashboardUserData();
+      context.read<UserProvider>().profile();
       context.read<AkademikProvider>().fetchAkademikData();
+      context.read<KurikulumProvider>().fetchInitialData(perPage: 10);
     });
   }
 
   @override
-  void dispose() {
-    _academicPageController.dispose();
-    super.dispose();
-  }
-
-  void doLogout() async {
-    bool isSuccess = await context.read<AuthProvider>().logout();
-
-    if (!mounted) return;
-
-    if (isSuccess) {
-      context.read<UserProvider>().clearUserData();
-      Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Terjadi kesalahan saat logout")),
-      );
-    }
-  }
-
-  String _formatDisplayDate(String dateStr) {
-    try {
-      DateTime dateTime = DateTime.parse(dateStr);
-      List<String> months = [
-        'JAN',
-        'FEB',
-        'MAR',
-        'APR',
-        'MEI',
-        'JUN',
-        'JUL',
-        'AGU',
-        'SEP',
-        'OKT',
-        'NOV',
-        'DES',
-      ];
-      return "${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}";
-    } catch (_) {
-      return dateStr;
-    }
-  }
-
-  String _getTahunAkademikLabel(int id) {
-    String idStr = id.toString();
-    if (idStr.length >= 4) {
-      int startYear = int.parse(idStr.substring(0, 4));
-      return "$startYear-${startYear + 1}";
-    }
-    return "$id";
-  }
-
-  Widget _buildAcademicYearItem(dynamic item) {
-    final String label = _getTahunAkademikLabel(item.id);
-    final String tipe = item.tipeSemester.toUpperCase();
-    final String mulai = _formatDisplayDate(item.tahunAwal);
-    final String selesai = _formatDisplayDate(item.tahunAkhir);
-
-    return _buildAcademicYearCard(
-      "Tahun Akademik $label ($tipe)",
-      mulai,
-      selesai,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final userProvider = context.watch<UserProvider>();
-    final akademikProvider = context.watch<AkademikProvider>();
-
-    final UserResponse? user = userProvider.data;
-    final int academicPageCount =
-        (akademikProvider.listTahunAkademik.length / 2).ceil();
-
-    final bool isLoadingCombined =
-        userProvider.isLoading || akademikProvider.isLoading;
+    final double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.backgroundColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
             Image.asset(
               'assets/logo/logo.png',
-              height: 50,
+              height: 35,
               fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.school,
+                color: AppColors.primaryColor,
+                size: 35,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
@@ -143,396 +65,548 @@ class _DashboardPageState extends State<DashboardPage> {
                 textStyle: const TextStyle(
                   color: AppColors.primaryColor,
                   fontWeight: FontWeight.bold,
-                  fontSize: 24,
+                  fontSize: 18,
                 ),
               ),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black87),
-            onPressed: () => doLogout(),
-          ),
-        ],
       ),
-      body: isLoadingCombined
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryColor),
-            )
-          : RefreshIndicator(
-              onRefresh: () async {
-                await context.read<UserProvider>().profile();
-                await Future.wait([
-                  context.read<UserProvider>().fetchDashboardUserData(),
-                  context.read<AkademikProvider>().fetchAkademikData(),
-                ]);
-              },
-              color: AppColors.primaryColor,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      Text(
-                        "Selamat Datang, ${user?.name ?? 'Admin akademik'}",
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        "Lagi mau ngapain nih?",
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CardCount(
-                              icon: Icons.business_center,
-                              label: "Total Pegawai",
-                              total: userProvider.totalUser,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: CardCount(
-                              icon: Icons.co_present,
-                              label: "Total Dosen",
-                              total: userProvider.totalDosen,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: const CardCount(
-                              icon: Icons.people,
-                              label: "Total Mahasiswa",
-                              total: 1024,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          const Expanded(child: SizedBox()),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      Text(
-                        "Fitur Utama",
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.95,
-                        children: [
-                          _buildMenuIcon("Kurikulum", Icons.menu_book, () {
-                            Navigator.pushNamed(context, "/kurikulum");
-                          }),
-                          _buildMenuIcon(
-                            "Kelas",
-                            Icons.meeting_room_outlined,
-                            () {
-                              Navigator.pushNamed(context, "/kelas");
-                            },
-                          ),
-                          _buildMenuIcon("KHS", Icons.assignment_outlined, () {
-                            // Tambahkan rute jika sudah ada
-                          }),
-                          _buildMenuIcon("Nilai", Icons.edit_note_outlined, () {
-                            // Tambahkan rute jika sudah ada
-                          }),
-                          _buildMenuIcon("Dosen", Icons.co_present, () {
-                            // Tambahkan rute jika sudah ada
-                          }),
-                          _buildMenuIcon(
-                            "Presensi",
-                            Icons.analytics_outlined,
-                            () {
-                              // Tambahkan rute jika sudah ada
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        "Data Tahun Akademik",
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.black12),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: "Tahun Akademik",
-                            isExpanded: true,
-                            icon: const Icon(
-                              Icons.keyboard_arrow_down,
-                              color: Colors.black54,
-                            ),
-                            style: GoogleFonts.poppins(
-                              color: Colors.black87,
-                              fontSize: 13,
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: "Tahun Akademik",
-                                child: Text("Tahun Akademik"),
-                              ),
-                            ],
-                            onChanged: (value) {},
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      if (akademikProvider.listTahunAkademik.isNotEmpty) ...[
-                        SizedBox(
-                          height: 250,
-                          child: PageView.builder(
-                            controller: _academicPageController,
-                            itemCount: academicPageCount,
-                            onPageChanged: (index) {
-                              setState(() {
-                                _currentAcademicPage = index;
-                              });
-                            },
-                            itemBuilder: (context, pageIndex) {
-                              final int firstIndex = pageIndex * 2;
-                              final int secondIndex = firstIndex + 1;
+      body: Consumer3<UserProvider, AkademikProvider, KurikulumProvider>(
+        builder: (context, userProvider, akademikProvider, kurikulumProvider, child) {
+          if (userProvider.isLoading ||
+              akademikProvider.isLoading ||
+              kurikulumProvider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryColor,
+                ),
+              ),
+            );
+          }
 
-                              return Column(
-                                children: [
-                                  if (firstIndex <
-                                      akademikProvider.listTahunAkademik.length)
-                                    _buildAcademicYearItem(
-                                      akademikProvider
-                                          .listTahunAkademik[firstIndex],
-                                    ),
-                                  if (secondIndex <
-                                      akademikProvider
-                                          .listTahunAkademik
-                                          .length) ...[
-                                    const SizedBox(height: 12),
-                                    _buildAcademicYearItem(
-                                      akademikProvider
-                                          .listTahunAkademik[secondIndex],
-                                    ),
-                                  ],
-                                ],
+          final String adminName = userProvider.data?.name ?? "Admin";
+
+          final allYears = List.from(akademikProvider.listTahunAkademik);
+          allYears.sort((a, b) => b.id.compareTo(a.id));
+          final displayYears = allYears.take(10).toList();
+          final displayKurikulum = kurikulumProvider.listKurikulum
+              .take(10)
+              .toList();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Selamat Datang, $adminName",
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  "Lagi mau ngapain nih?",
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 1.2,
+                  children: [
+                    _buildStatDateCard(),
+                    _buildStatCard(
+                      "Total Dosen",
+                      userProvider.totalDosen.toString(),
+                      Icons.co_present,
+                    ),
+                    _buildStatCard(
+                      "Total Pegawai",
+                      userProvider.totalUser.toString(),
+                      Icons.badge,
+                    ),
+                    _buildStatCard("Total Mahasiswa", "120", Icons.school),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                Text(
+                  "Fitur Utama",
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildMenuGrid(),
+                const SizedBox(height: 24),
+
+                Text(
+                  "Data Akademik",
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.black12, width: 1),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedAkademikCategory,
+                      isExpanded: true,
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.black54,
+                      ),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
+                      items: _akademikCategories.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
+                        setState(() {
+                          _selectedAkademikCategory = newValue!;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                if (_selectedAkademikCategory == 'Tahun Akademik') ...[
+                  displayYears.isEmpty
+                      ? _buildEmptyState("Tidak ada data tahun akademik")
+                      : SizedBox(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: displayYears.length,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final ta = displayYears[index];
+                              final String tglMulai = ta.tahunAwal.split(
+                                'T',
+                              )[0];
+                              final String tglSelesai = ta.tahunAkhir.split(
+                                'T',
+                              )[0];
+
+                              final String thnAwalStr = tglMulai.length >= 4
+                                  ? tglMulai.substring(0, 4)
+                                  : "";
+                              final String thnAkhirStr = tglSelesai.length >= 4
+                                  ? tglSelesai.substring(0, 4)
+                                  : "";
+                              final String semFormatted =
+                                  ta.tipeSemester.isEmpty
+                                  ? ""
+                                  : ta.tipeSemester[0].toUpperCase() +
+                                        ta.tipeSemester.substring(1);
+
+                              final String cardTitle =
+                                  thnAwalStr.isNotEmpty &&
+                                      thnAkhirStr.isNotEmpty
+                                  ? "Tahun $thnAwalStr/$thnAkhirStr $semFormatted"
+                                  : "Tahun ${ta.id} $semFormatted";
+
+                              return Container(
+                                width: (screenWidth - 54) / 2,
+                                margin: const EdgeInsets.only(right: 12),
+                                child: _buildTahunAkademikCard(
+                                  cardTitle,
+                                  tglMulai,
+                                  tglSelesai,
+                                  ta.status,
+                                ),
                               );
                             },
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(academicPageCount, (index) {
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _currentAcademicPage == index
-                                    ? Colors.black.withOpacity(0.4)
-                                    : Colors.black.withOpacity(0.08),
-                              ),
-                            );
-                          }),
+                ] else if (_selectedAkademikCategory == 'Kurikulum') ...[
+                  displayKurikulum.isEmpty
+                      ? _buildEmptyState("Tidak ada data kurikulum")
+                      : SizedBox(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: displayKurikulum.length,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final kurikulum = displayKurikulum[index];
+                              final String formattedProdi = kurikulum.prodi.name
+                                  .split('-')
+                                  .map(
+                                    (word) => word.isEmpty
+                                        ? ''
+                                        : '${word[0].toUpperCase()}${word.substring(1)}',
+                                  )
+                                  .join(' ');
+
+                              return Container(
+                                width: (screenWidth - 54) / 2,
+                                margin: const EdgeInsets.only(right: 12),
+                                child: _buildKurikulumCard(
+                                  kurikulum.name.toUpperCase(),
+                                  "${kurikulum.prodi.jenjang} $formattedProdi",
+                                  "Aktif",
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ],
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
-              ),
+                ],
+                const SizedBox(height: 24),
+              ],
             ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildMenuIcon(String label, IconData icon, VoidCallback onTap) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          hoverColor: Colors.black.withOpacity(0.02),
-          splashColor: Colors.black.withOpacity(0.04),
-          highlightColor: Colors.black.withOpacity(0.01),
+  Widget _buildMenuGrid() {
+    final List<Map<String, dynamic>> menus = [
+      {"label": "Kurikulum", "icon": Icons.book, "route": "/kurikulum"},
+      {"label": "Kelas", "icon": Icons.collections_bookmark, "route": "/kelas"},
+      {"label": "KHS", "icon": Icons.assignment, "route": "/khs"},
+      {"label": "Dosen", "icon": Icons.co_present, "route": "/dosen"},
+      {"label": "Presensi", "icon": Icons.add_task, "route": "/presensi"},
+      {
+        "label": "Selengkapnya",
+        "icon": Icons.double_arrow,
+        "route": "/akademik",
+      },
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: menus.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.0,
+      ),
+      itemBuilder: (context, index) {
+        return InkWell(
+          onTap: () {
+            if (menus[index]["label"] == "Selengkapnya") {
+              if (widget.onSelengkapnyaTap != null) {
+                widget.onSelengkapnyaTap!();
+              } else {
+                Navigator.pushNamed(context, menus[index]["route"]);
+              }
+            } else {
+              Navigator.pushNamed(context, menus[index]["route"]);
+            }
+          },
           child: Container(
-            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.black12, width: 1),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  menus[index]["icon"],
+                  color: const Color(0xFF1A3A8B),
+                  size: 24,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  menus[index]["label"],
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
                 ),
               ],
             ),
-            child: Icon(icon, color: AppColors.primaryColor, size: 24),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.primaryColor,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildAcademicYearCard(String title, String start, String end) {
+  Widget _buildEmptyState(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Text(
+          message,
+          style: GoogleFonts.poppins(fontSize: 13, color: Colors.black45),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatDateCard() {
+    final DateTime now = DateTime.now();
+    final String tanggal = DateFormat('d').format(now);
+    final String bulan = DateFormat('MMMM', 'id_ID').format(now);
+    final String tahun = DateFormat('yyyy').format(now);
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.black12, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            tanggal,
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: const Color(0xFF1A3A8B),
             ),
           ),
-          const SizedBox(height: 8),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Tahun Mulai",
-                style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
-              ),
-              Text(
-                ": $start",
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+          Text(
+            bulan,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1A3A8B),
+            ),
           ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Tahun Selesai",
-                style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
-              ),
-              Text(
-                ": $end",
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+          Text(
+            tahun,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A3A8B),
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class CardCount extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int total;
-
-  const CardCount({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.total,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildStatCard(String title, String count, IconData icon) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondaryColor, width: 1.5),
+        border: Border.all(color: Colors.black12, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppColors.primaryColor, size: 22),
-          const SizedBox(height: 8),
+          Icon(icon, color: const Color(0xFF1A3A8B), size: 24),
+          const SizedBox(height: 4),
           Text(
-            label,
+            title,
             style: GoogleFonts.poppins(
-              color: AppColors.primaryColor,
+              fontSize: 11,
+              color: Colors.black54,
               fontWeight: FontWeight.w500,
-              fontSize: 12,
             ),
           ),
           const SizedBox(height: 2),
           Text(
-            total.toString(),
+            count,
             style: GoogleFonts.poppins(
-              color: AppColors.primaryColor,
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A3A8B),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTahunAkademikCard(
+    String title,
+    String tglMulai,
+    String tglSelesai,
+    String status,
+  ) {
+    final bool isAktif = status.toLowerCase() == 'aktif';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black12, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isAktif ? const Color(0xFF2ECC71) : Colors.grey,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  isAktif ? "Aktif" : "Nonaktif",
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 8, thickness: 0.5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Mulai",
+                style: GoogleFonts.poppins(fontSize: 10, color: Colors.black54),
+              ),
+              Text(
+                tglMulai,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Selesai",
+                style: GoogleFonts.poppins(fontSize: 10, color: Colors.black54),
+              ),
+              Text(
+                tglSelesai,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKurikulumCard(
+    String namaKurikulum,
+    String prodi,
+    String status,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black12, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  namaKurikulum,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: const Color(0xFF1A3A8B),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2ECC71),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  status,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 8, thickness: 0.5),
+          Text(
+            "Program Studi",
+            style: GoogleFonts.poppins(
+              fontSize: 9,
+              color: Colors.black45,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            prodi,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ],
       ),

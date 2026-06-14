@@ -10,9 +10,10 @@ import 'package:admin_pegawai/providers/mata_kuliah_provider.dart';
 import 'package:admin_pegawai/screens/admin_dashboard_screen.dart';
 import 'package:admin_pegawai/screens/akademik_screen.dart';
 import 'package:admin_pegawai/screens/auth_screen.dart';
-import 'package:admin_pegawai/screens/admin_main_screen.dart';
-import 'package:admin_pegawai/screens/admin_super_main_screen.dart';
+import 'package:admin_pegawai/screens/admin_main_screen.dart'; // File AdminScreen Anda
+import 'package:admin_pegawai/screens/admin_super_main_screen.dart'; // File SuperScreen Anda
 import 'package:admin_pegawai/screens/kelas_detail_screen.dart';
+import 'package:admin_pegawai/screens/kelas_edit_screen.dart';
 import 'package:admin_pegawai/screens/kurikulum_detail_screen.dart';
 import 'package:admin_pegawai/screens/detail_screen.dart';
 import 'package:admin_pegawai/screens/detail_tahun_akademik_screen.dart';
@@ -93,7 +94,8 @@ class MainApp extends StatelessWidget {
       home: screen,
       routes: {
         "/login": (context) => const AuthScreen(),
-        "/dashboard-admin": (context) => const AdminDashboard(),
+        "/dashboard-admin": (context) =>
+            const AdminDashboard(), // AMAN: Tidak lagi error karena parameter opsional
         "/dashboard-super-admin": (context) => const SuperDashboard(),
         "/detail-akun": (context) => const DetailAkunScreen(),
         "/reset-screen": (context) => ResetScreen(),
@@ -111,10 +113,12 @@ class MainApp extends StatelessWidget {
         // --- ROUTE KELAS ---
         "/kelas": (context) => const KelasScreen(),
         "/detail-kelas": (context) => const DetailKelasScreen(),
+        "/kelas-edit": (context) => const KelasEditScreen(),
 
         // --- ROUTE MATAKULIAH ---
         "/matakuliah": (context) => const MatakuliahScreen(),
         "/matakuliah-edit": (context) => const MatakuliahEditScreen(),
+
         // --- ROUTE PRODI ---
         "/prodi": (context) => const ProdiScreen(),
         "/prodi-detail": (context) => const ProdiDetailScreen(),

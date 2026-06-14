@@ -2,6 +2,7 @@ import 'package:admin_pegawai/providers/akademik_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:admin_pegawai/utils/app_colors.dart';
 
 class TahunAkademikEditScreen extends StatefulWidget {
   const TahunAkademikEditScreen({super.key});
@@ -52,7 +53,7 @@ class _TahunAkademikEditScreenState extends State<TahunAkademikEditScreen> {
               'SABAR',
               style: GoogleFonts.poppins(
                 textStyle: const TextStyle(
-                  color: Color(0xFF1A365D),
+                  color: AppColors.primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -64,9 +65,7 @@ class _TahunAkademikEditScreenState extends State<TahunAkademikEditScreen> {
       body: Consumer<AkademikProvider>(
         builder: (context, provider, child) {
           return Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Form(
               key: _formKey,
               child: SingleChildScrollView(
@@ -95,10 +94,7 @@ class _TahunAkademikEditScreenState extends State<TahunAkademikEditScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(
-                      height: 16,
-                    ), // Jarak antara tombol kembali dan breadcrumb
-
+                    const SizedBox(height: 16),
                     const Text(
                       "Akademik > Tahun Akademik > Detail Tahun Akademik > Edit Tahun Akademik",
                       style: TextStyle(color: Colors.grey, fontSize: 11),
@@ -120,7 +116,7 @@ class _TahunAkademikEditScreenState extends State<TahunAkademikEditScreen> {
                     Container(
                       width: double.infinity,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF1A365D),
+                        color: AppColors.primaryColor,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
@@ -184,7 +180,7 @@ class _TahunAkademikEditScreenState extends State<TahunAkademikEditScreen> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderSide: const BorderSide(
-                                  color: Color(0xFF1A365D),
+                                  color: AppColors.primaryColor,
                                   width: 1.5,
                                 ),
                                 borderRadius: BorderRadius.circular(6),
@@ -272,28 +268,56 @@ class _TahunAkademikEditScreenState extends State<TahunAkademikEditScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    // --- TOMBOL SIMPAN YANG SANGAT RELEVAN ---
                     SizedBox(
                       width: double.infinity,
                       height: 46,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A365D),
+                          backgroundColor: AppColors.primaryColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
                           elevation: 0,
                         ),
+                        // Menggunakan state loading langsung dari provider di scope consumer
                         onPressed: provider.isLoading
                             ? null
                             : () async {
                                 if (_formKey.currentState!.validate()) {
-                                  bool success = await provider
+                                  // PERBAIKAN UTAMA: Ambil instance provider lewat context read untuk mengeksekusi aksi
+                                  final akademikProvider = context
+                                      .read<AkademikProvider>();
+
+                                  bool success = await akademikProvider
                                       .editTahunAkademik(
                                         _tahunAwalController.text,
                                         _tahunAkhirController.text,
                                       );
+
                                   if (success && context.mounted) {
+                                    // Panggil fetch data ulang agar halaman list di belakangnya otomatis ter-update datanya
+                                    await akademikProvider.fetchAkademikData();
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Berhasil memperbarui Tahun Akademik!",
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
                                     Navigator.pop(context);
+                                  } else if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Gagal memperbarui data. Coba lagi.",
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
                                   }
                                 }
                               },

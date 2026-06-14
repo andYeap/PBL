@@ -236,7 +236,12 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
                     height: 46,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // Tambahkan aksi edit di sini
+                        Navigator.pushNamed(
+                          context,
+                          "/kelas-edit",
+                          arguments:
+                              kelas, 
+                        );
                       },
                       icon: const Icon(
                         Icons.edit_note,

@@ -162,18 +162,25 @@ class AkademikService {
 
   Future<bool> updateTahunAkademik(TahunAkademik ta) async {
     try {
+      debugPrint("Target URL: /api/tahun-akademik/${ta.id}");
+      debugPrint("Payload Body (JSON): ${ta.toJson()}");
+
       final response = await _dio.put(
         "/api/tahun-akademik/${ta.id}",
-        data: {
-          "tipee_semester": ta.tipeSemester,
-          "tahun_awal": ta.tahunAwal,
-          "tahun_akhir": ta.tahunAkhir,
-          "status": ta.status,
-        },
+        data: ta
+            .toJson(),
+        options: Options(
+          headers: {"Content-Type": "application/json"},
+        ),
       );
+
       return response.statusCode == 200 && response.data["success"] == true;
     } catch (e) {
-      debugPrint("Error updating tahun akademik: $e");
+      if (e is DioException && e.response != null) {
+        debugPrint("Server Error Details: ${e.response?.data}");
+      } else {
+        debugPrint("Error updating tahun akademik: $e");
+      }
       return false;
     }
   }
