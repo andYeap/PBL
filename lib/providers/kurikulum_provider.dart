@@ -8,18 +8,18 @@ class KurikulumProvider with ChangeNotifier {
   List<KurikulumModel> _listKurikulum = [];
   bool _isLoading = false;
   bool _isFetchingMore = false;
+  bool _isUpdating = false;
+  bool get isUpdating => _isUpdating;
 
   int _currentPage = 1;
   int _totalPages = 1;
   bool _hasMoreData = true;
 
-  // Getter
   List<KurikulumModel> get listKurikulum => _listKurikulum;
   bool get isLoading => _isLoading;
   bool get isFetchingMore => _isFetchingMore;
   bool get hasMoreData => _hasMoreData;
 
-  /// Memuat data pertama kali (Page 1)
   Future<void> fetchInitialData({int perPage = 10}) async {
     _isLoading = true;
     _currentPage = 1;
@@ -40,6 +40,8 @@ class KurikulumProvider with ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  
 
   Future<void> fetchNextPage({int perPage = 10}) async {
     if (_isFetchingMore || !_hasMoreData) return;
