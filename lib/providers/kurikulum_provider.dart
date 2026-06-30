@@ -41,7 +41,41 @@ class KurikulumProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  
+  Future<bool> updateKurikulum({
+    required String kode,
+    required String name,
+    required String prodiId,
+    required List<Map<String, dynamic>> kurikulumMk,
+  }) async {
+    _isUpdating = true;
+    notifyListeners();
+
+    try {
+      // Sesuaikan endpoint PUT/POST Anda, misal: /api/kurikulum/{kode}
+      final response = await _service.updateKurikulumRaw(
+        kode: kode,
+        payload: {
+          "name": name,
+          "prodi_id": int.tryParse(prodiId) ?? prodiId,
+          "kurikulum_mk": kurikulumMk,
+        },
+      );
+
+      _isUpdating = false;
+      if (response == true) {
+        // Opsional: panggil fetchInitialData() kembali untuk merefresh list lokal
+        await fetchInitialData();
+        return true;
+      }
+      notifyListeners();
+      return false;
+    } catch (e) {
+      debugPrint("Error updating kurikulum: $e");
+      _isUpdating = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
   Future<void> fetchNextPage({int perPage = 10}) async {
     if (_isFetchingMore || !_hasMoreData) return;

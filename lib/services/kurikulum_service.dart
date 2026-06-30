@@ -25,4 +25,16 @@ class KurikulumService {
       return null;
     }
   }
+
+  Future<bool> updateKurikulumRaw({
+    required String kode,
+    required Map<String, dynamic> payload,
+  }) async {
+    try {
+      final response = await _dio.put("/api/kurikulum/$kode", data: payload);
+      return response.statusCode == 200 && response.data["success"] == true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/kurikulum_model.dart'; // <--- PASTIKAN PATH MODEL ANDA BENAR
+import '../services/kurikulum_service.dart';
 
 class KurikulumEditScreen extends StatefulWidget {
-  const KurikulumEditScreen({super.key});
+  final dynamic kurikulum; // Menerima objek KurikulumModel atau Map JSON mentah
+
+  const KurikulumEditScreen({super.key, required this.kurikulum});
 
   @override
   State<KurikulumEditScreen> createState() => _KurikulumEditScreenState();
@@ -10,27 +14,120 @@ class KurikulumEditScreen extends StatefulWidget {
 
 class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
   final Color primaryColor = const Color(0xFF1E3A8A);
-  final TextEditingController _namaController = TextEditingController(
-    text: "Merdeka",
-  );
+  final KurikulumService _kurikulumService = KurikulumService();
+  bool _isLoading = false;
 
-  String? selectedJurusan = "Teknik Elektro";
-  String? selectedProdi = "Teknik Informatika";
+  late TextEditingController _namaController;
+  String? selectedJurusan;
+  String? selectedProdi;
 
-  // Data state simulasi baris mata kuliah dinamis sesuai dengan mockup Anda
-  List<Map<String, dynamic>> editListMk = [
-    {"nama": "Pilih Matakuliah", "status": "Wajib"},
+  // Value murni menggunakan format slug (huruf kecil & strip) agar pas dengan payload API
+  final List<String> _listJurusanOpsi = [
+    "teknik-elektro",
+    "teknik-mesin",
+    "akuntansi",
   ];
+
+  final List<String> _listProdiOpsi = [
+    "teknik-informatika",
+    "sistem-informasi-kota-cerdas",
+    "teknik-komputer",
+  ];
+
+  List<Map<String, dynamic>> editListMk = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Inisialisasi controller teks nama kurikulum
+    _namaController = TextEditingController(text: widget.kurikulum?.name ?? "");
+
+    // Deteksi tipe data parameter input (Objek Model vs Map JSON)
+    String rawJurusan = "";
+    String rawProdi = "";
+
+    if (widget.kurikulum is KurikulumModel) {
+      rawJurusan = widget.kurikulum.prodi.jurusan.name;
+      rawProdi = widget.kurikulum.prodi.name;
+    } else {
+      rawJurusan = widget.kurikulum?['prodi']?['jurusan']?['name'] ?? "";
+      rawProdi = widget.kurikulum?['prodi']?['name'] ?? "";
+    }
+
+    // Normalisasikan string input awal dari database menjadi standard slug
+    selectedJurusan = _convertToSlug(rawJurusan);
+    selectedProdi = _convertToSlug(rawProdi);
+
+    // Inisialisasi daftar mata kuliah
+    final dynamic mkListRaw = widget.kurikulum is KurikulumModel
+        ? widget.kurikulum.kurikulumMk
+        : widget.kurikulum?['kurikulum_mk'];
+
+    if (mkListRaw != null) {
+      final List<dynamic> mkList = mkListRaw;
+      editListMk = List<Map<String, dynamic>>.from(
+        mkList.map((mk) {
+          final mataKuliah = mk?.mataKuliah;
+          String statusMk = "Wajib";
+          if (mk?.wajib == false) {
+            statusMk = "Pilihan";
+          }
+
+          return {
+            "id": mataKuliah?.id ?? "",
+            "kode": mataKuliah?.kode ?? "-",
+            "nama": mataKuliah?.name ?? "Tanpa Nama",
+            "status": statusMk,
+          };
+        }),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    super.dispose();
+  }
+
+  // Mengubah variasi text (Spasi / Kapital) -> Standard Slug ("teknik-informatika")
+  String _convertToSlug(String text) {
+    return text.toLowerCase().trim().replaceAll(" ", "-").replaceAll("_", "-");
+  }
+
+  // Mengubah slug -> Title Case untuk tampilan Dropdown UI ("Teknik Informatika")
+  String _formatDisplay(String text) {
+    if (text.isEmpty) return "";
+    return text
+        .replaceAll("-", " ")
+        .replaceAll("_", " ")
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty
+              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+              : '',
+        )
+        .join(' ');
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Pengaman Dropdown: Jika value tidak terdaftar di opsi list, paksa pilih item pertama agar layar tidak merah/crash
+    if (selectedJurusan == null ||
+        !_listJurusanOpsi.contains(selectedJurusan)) {
+      selectedJurusan = _listJurusanOpsi.first;
+    }
+    if (selectedProdi == null || !_listProdiOpsi.contains(selectedProdi)) {
+      selectedProdi = _listProdiOpsi.first;
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFFF4F7FB),
         elevation: 0,
-        scrolledUnderElevation: 0,
         title: Row(
           children: [
             const Icon(Icons.school, color: Color(0xFF1E3A8A), size: 40),
@@ -53,7 +150,6 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
-              // --- Tombol Kembali ---
               InkWell(
                 onTap: () => Navigator.pop(context),
                 child: Row(
@@ -70,21 +166,15 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-              // --- Breadcrumbs ---
               Text(
                 "Akademik > Kurikulum > Detail Kurikulum > Edit Kurikulum",
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.black54,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
               ),
               const SizedBox(height: 10),
               Text(
@@ -92,17 +182,11 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Pembaharuan data kurikulum",
-                style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
               ),
               const SizedBox(height: 24),
 
-              // --- CARD 1: Form Informasi Kurikulum ---
+              // CARD 1: Informasi Kurikulum
               _buildFormCard(
                 title: "Informasi Kurikulum",
                 child: Column(
@@ -124,12 +208,12 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
                         fontSize: 13,
                         color: Colors.black87,
                       ),
-                      decoration: _buildInputDecoration(""),
-                      items: ["Teknik Elektro", "Teknik Mesin", "Akuntansi"]
+                      decoration: _buildInputDecoration("Pilih Jurusan"),
+                      items: _listJurusanOpsi
                           .map(
-                            (label) => DropdownMenuItem(
-                              value: label,
-                              child: Text(label),
+                            (slugValue) => DropdownMenuItem(
+                              value: slugValue,
+                              child: Text(_formatDisplay(slugValue)),
                             ),
                           )
                           .toList(),
@@ -144,20 +228,15 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
                         fontSize: 13,
                         color: Colors.black87,
                       ),
-                      decoration: _buildInputDecoration(""),
-                      items:
-                          [
-                                "Teknik Informatika",
-                                "Sistem Informasi",
-                                "Teknik Komputer",
-                              ]
-                              .map(
-                                (label) => DropdownMenuItem(
-                                  value: label,
-                                  child: Text(label),
-                                ),
-                              )
-                              .toList(),
+                      decoration: _buildInputDecoration("Pilih Prodi"),
+                      items: _listProdiOpsi
+                          .map(
+                            (slugValue) => DropdownMenuItem(
+                              value: slugValue,
+                              child: Text(_formatDisplay(slugValue)),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (value) =>
                           setState(() => selectedProdi = value),
                     ),
@@ -166,186 +245,140 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
               ),
               const SizedBox(height: 24),
 
-              // --- CARD 2: Form Informasi Matakuliah (FIXED LAYOUT) ---
+              // CARD 2: Informasi Matakuliah
               _buildFormCard(
                 title: "Informasi Matakuliah",
-                child: Column(
-                  children: [
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: editListMk.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              // 1. Dropdown Matakuliah menggunakan Expanded agar mendapatkan porsi ruang terbesar
-                              Expanded(
-                                flex: 5,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildLabelField("Matakuliah"),
-                                    DropdownButtonFormField<String>(
-                                      value: editListMk[index]["nama"],
-                                      isExpanded:
-                                          true, // Mengamankan teks panjang di dalam internal row dropdown
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        color: Colors.black87,
-                                      ),
-                                      decoration: _buildInputDecoration(""),
-                                      items:
-                                          [
-                                                "Pilih Matakuliah",
-                                                "Metode Numerik",
-                                                "Administrasi Database",
-                                                "Keamanan Jaringan",
-                                              ]
-                                              .map(
-                                                (label) => DropdownMenuItem(
-                                                  value: label,
-                                                  child: Text(
-                                                    label,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              )
-                                              .toList(),
-                                      onChanged: (val) => setState(
-                                        () => editListMk[index]["nama"] = val,
-                                      ),
-                                    ),
-                                  ],
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: editListMk.length,
+                  itemBuilder: (context, index) {
+                    final item = editListMk[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabelField("Matakuliah"),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F4F6),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.black12),
+                                  ),
+                                  child: Text(
+                                    "${item["nama"]} (${item["kode"]})",
+                                    style: GoogleFonts.poppins(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-
-                              // 2. Kolom Komponen Pilihan Status (Wajib / Pilihan) dengan Ukuran Pasti
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLabelField("Status"),
+                              Row(
                                 children: [
-                                  _buildLabelField("Status"),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _buildFixedStatusButton(
-                                        "Wajib",
-                                        editListMk[index]["status"] == "Wajib",
-                                        () {
-                                          setState(
-                                            () => editListMk[index]["status"] =
-                                                "Wajib",
-                                          );
-                                        },
-                                      ),
-                                      const SizedBox(width: 4),
-                                      _buildFixedStatusButton(
-                                        "Pilihan",
-                                        editListMk[index]["status"] ==
-                                            "Pilihan",
-                                        () {
-                                          setState(
-                                            () => editListMk[index]["status"] =
-                                                "Pilihan",
-                                          );
-                                        },
-                                      ),
-                                    ],
+                                  _buildFixedStatusButton(
+                                    "Wajib",
+                                    item["status"] == "Wajib",
+                                    () => setState(
+                                      () =>
+                                          editListMk[index]["status"] = "Wajib",
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  _buildFixedStatusButton(
+                                    "Pilihan",
+                                    item["status"] == "Pilihan",
+                                    () => setState(
+                                      () => editListMk[index]["status"] =
+                                          "Pilihan",
+                                    ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: 8),
-
-                              // 3. Tombol Hapus (Icon Sampah Merah)
-                              InkWell(
-                                onTap: () {
-                                  if (editListMk.length > 1) {
-                                    setState(() => editListMk.removeAt(index));
-                                  }
-                                },
-                                child: Container(
-                                  height:
-                                      40, // Sejajar sempurna dengan tinggi input field disampingnya
-                                  width: 40,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 4),
-                    // Tombol Tambah Baris Mata Kuliah
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        setState(
-                          () => editListMk.add({
-                            "nama": "Pilih Matakuliah",
-                            "status": "Wajib",
-                          }),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.add,
-                        color: Colors.black87,
-                        size: 16,
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () =>
+                                setState(() => editListMk.removeAt(index)),
+                            child: Container(
+                              height: 40,
+                              width: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      label: Text(
-                        "Tambah",
-                        style: GoogleFonts.poppins(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 44),
-                        side: const BorderSide(color: Colors.black26),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),
 
-              // --- TOMBOL SIMPAN ---
+              // TOMBOL SIMPAN KE SERVER
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.save, color: Colors.white, size: 18),
-                  label: Text(
-                    "Simpan",
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _simpanDataKeApi,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    elevation: 0,
                   ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.save,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Simpan Perubahan",
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ),
               const SizedBox(height: 40),
@@ -353,51 +386,96 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF1E3A8A),
-        unselectedItemColor: Colors.black38,
-        currentIndex: 1,
-        selectedLabelStyle: GoogleFonts.poppins(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Beranda',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'Akademik',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt_outlined),
-            label: 'Pengguna',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle_outlined),
-            label: 'Profile',
-          ),
-        ],
-      ),
     );
   }
 
-  // --- Helper Widget Layout ---
+  // --- Eksekusi PUT Request ke Backend ---
+  Future<void> _simpanDataKeApi() async {
+    setState(() => _isLoading = true);
+
+    String idKurikulumUrl = "";
+
+    // MENGGUNAKAN ID (UUID) SEBAGAI PARAMETER RUTE URL
+    if (widget.kurikulum is KurikulumModel) {
+      idKurikulumUrl = widget.kurikulum.id;
+    } else {
+      idKurikulumUrl = (widget.kurikulum?["id"] ?? "").toString().trim();
+    }
+
+    if (idKurikulumUrl.isEmpty) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Gagal mendapatkan ID kurikulum!"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Pembuatan payload data
+    Map<String, dynamic> payload = {
+      "name": _namaController.text,
+      "jurusan": selectedJurusan,
+      "prodi": selectedProdi,
+      "mata_kuliah": editListMk
+          .map(
+            (mk) => {
+              "id": mk["id"],
+              "kode": mk["kode"],
+              "wajib": mk["status"] == "Wajib",
+            },
+          )
+          .toList(),
+    };
+
+    // Mengirimkan ID (UUID) ke service API, bukan lagi string 'kur-mer-TI'
+    bool success = await _kurikulumService.updateKurikulumRaw(
+      kode: idKurikulumUrl,
+      payload: payload,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Data kurikulum berhasil diperbarui!",
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 600));
+        Navigator.pop(context, true);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Gagal menyimpan. Coba cek validitas data di server.",
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  // --- UI Layout Helpers ---
   Widget _buildFormCard({required String title, required Widget child}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -453,10 +531,7 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
     return InputDecoration(
       hintText: hint,
       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.black26),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: Colors.black12),
@@ -473,13 +548,10 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
       onTap: onTap,
       child: Container(
         height: 40,
-        width: 54, // Ukuran pas & efisien untuk teks di layar handphone kecil
+        width: 54,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          border: Border.all(
-            color: isSelected ? primaryColor : Colors.black26,
-            width: isSelected ? 1.5 : 1,
-          ),
+          color: isSelected ? primaryColor : Colors.transparent,
+          border: Border.all(color: isSelected ? primaryColor : Colors.black26),
           borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
@@ -488,7 +560,7 @@ class _KurikulumEditScreenState extends State<KurikulumEditScreen> {
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: Colors.black87,
+            color: isSelected ? Colors.white : Colors.black87,
           ),
         ),
       ),

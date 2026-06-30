@@ -1,5 +1,4 @@
 import 'package:admin_pegawai/providers/akademik_provider.dart';
-import 'package:admin_pegawai/providers/auth_provider.dart';
 import 'package:admin_pegawai/providers/kelas_provider.dart';
 import 'package:admin_pegawai/providers/khs_provider.dart';
 import 'package:admin_pegawai/providers/kurikulum_provider.dart';
@@ -32,23 +31,8 @@ class _AkademikScreenState extends State<AkademikScreen> {
       context.read<MataKuliahProvider>().fetchInitialData();
       context.read<KurikulumProvider>().fetchInitialData();
       context.read<KelasProvider>().fetchInitialData();
-      context.read<KhsProvider>().fetchKhsData();
+      context.read<KhsProvider>().loadKhsData();
     });
-  }
-
-  void doLogout() async {
-    final provider = context.read<AuthProvider>();
-    bool isSuccess = await provider.logout();
-
-    if (!mounted) return;
-
-    if (isSuccess) {
-      Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Terjadi kesalahan saat logout")),
-      );
-    }
   }
 
   @override
@@ -67,7 +51,7 @@ class _AkademikScreenState extends State<AkademikScreen> {
     final int totalProdi = prodiProvider.listProdi.length;
     final int totalJurusan = jurusanProvider.listJurusan.length;
     final int totalKelas = kelasProvider.listKelas.length;
-    final int totalKHS = khsProvider.listKhs.length;
+    final int totalKHS = khsProvider.allKhsData.length;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
@@ -97,12 +81,6 @@ class _AkademikScreenState extends State<AkademikScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black87),
-            onPressed: () => doLogout(),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -124,72 +102,51 @@ class _AkademikScreenState extends State<AkademikScreen> {
                 style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
               ),
               const SizedBox(height: 24),
-
               _buildMenuTile(
                 title: "Tahun Akademik",
-                subtitle: totalTahunAkademik > 0
-                    ? "Tersedia $totalTahunAkademik Tahun Akademik"
-                    : "Tersedia 11 Tahun Akademik",
+                subtitle: "Tersedia $totalTahunAkademik Tahun Akademik",
                 icon: Icons.calendar_today_outlined,
                 onTap: () => Navigator.pushNamed(context, "/tahun-akademik"),
               ),
               const SizedBox(height: 16),
-
               _buildMenuTile(
                 title: "Kurikulum",
-                subtitle: totalKurikulum > 0
-                    ? "Tersedia $totalKurikulum Kurikulum"
-                    : "Tersedia 5 Kurikulum",
+                subtitle: "Tersedia $totalKurikulum Kurikulum",
                 icon: Icons.book_outlined,
                 onTap: () => Navigator.pushNamed(context, "/kurikulum"),
               ),
               const SizedBox(height: 16),
-
               _buildMenuTile(
                 title: "Matakuliah",
-                subtitle: totalMataKuliah > 0
-                    ? "Terdapat $totalMataKuliah Matakuliah"
-                    : "Terdapat 0 Matakuliah",
+                subtitle: "Terdapat $totalMataKuliah Matakuliah",
                 icon: Icons.assignment_outlined,
                 onTap: () => Navigator.pushNamed(context, "/matakuliah"),
               ),
               const SizedBox(height: 16),
-
               _buildMenuTile(
                 title: "Kelas",
-                subtitle: totalKelas > 0
-                    ? "Tersedia $totalKelas Kelas"
-                    : "Tersedia 0 Kelas",
+                subtitle: "Tersedia $totalKelas Kelas",
                 icon: Icons.co_present_outlined,
                 onTap: () => Navigator.pushNamed(context, "/kelas"),
               ),
               const SizedBox(height: 16),
-
               _buildMenuTile(
                 title: "KHS",
-                subtitle: totalKHS > 0
-                    ? "Terdapat $totalKHS KHS"
-                    : "Terdapat 0 KHS",
+                subtitle: "Terdapat $totalKHS KHS",
                 icon: Icons.description_outlined,
                 onTap: () => Navigator.pushNamed(context, "/khs"),
               ),
               const SizedBox(height: 16),
-
               _buildMenuTile(
                 title: "Jurusan",
-                subtitle: totalJurusan > 0
-                    ? "Terdapat $totalJurusan Jurusan"
-                    : "Terdapat 5 Jurusan",
+                subtitle: "Terdapat $totalJurusan Jurusan",
                 icon: Icons.school_outlined,
                 onTap: () => Navigator.pushNamed(context, "/jurusan"),
               ),
               const SizedBox(height: 16),
-
               _buildMenuTile(
                 title: "Prodi",
-                subtitle: totalProdi > 0
-                    ? "Terdapat $totalProdi Prodi"
-                    : "Terdapat 48 Prodi",
+                subtitle: "Terdapat $totalProdi Prodi",
                 icon: Icons.workspace_premium_outlined,
                 onTap: () => Navigator.pushNamed(context, "/prodi"),
               ),

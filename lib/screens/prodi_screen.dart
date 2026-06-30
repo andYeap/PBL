@@ -14,6 +14,20 @@ class _ProdiScreenState extends State<ProdiScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
+  // Fungsi helper untuk menghilangkan '-' dan membuat huruf pertama kapital
+  String _formatText(String text) {
+    if (text.isEmpty) return text;
+    return text
+        .replaceAll('-', ' ')
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+              : '',
+        )
+        .join(' ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -199,7 +213,7 @@ class _ProdiScreenState extends State<ProdiScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      item.nama,
+                                      _formatText(item.nama),
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
@@ -240,7 +254,10 @@ class _ProdiScreenState extends State<ProdiScreen> {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              _buildItemRow("Jurusan", item.jurusanNama),
+                              _buildItemRow(
+                                "Jurusan",
+                                _formatText(item.jurusanNama),
+                              ),
                               const SizedBox(height: 6),
                               _buildItemRow("Jenjang", item.jenjang),
                             ],

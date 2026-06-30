@@ -95,12 +95,12 @@ class AkademikService {
     }
   }
 
-  Future<List<Khs>> fetchKhs() async {
+  Future<List<KhsData>> fetchKhs() async {
     try {
       final response = await _dio.get("/api/khs");
       if (response.statusCode == 200 && response.data["success"] == true) {
         final List<dynamic> data = response.data["data"];
-        return data.map((item) => Khs.fromJson(item)).toList();
+        return data.map((item) => KhsData.fromJson(item)).toList();
       }
       return [];
     } catch (e) {

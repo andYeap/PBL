@@ -10,6 +10,10 @@ class DetailKelasScreen extends StatefulWidget {
 }
 
 class _DetailKelasScreenState extends State<DetailKelasScreen> {
+  // Atur limit per halaman data lokal
+  final int _perPage = 20;
+  int _currentLimit = 20;
+
   @override
   Widget build(BuildContext context) {
     // 1. Ambil argumen objek Kelas dari navigator dengan aman
@@ -36,7 +40,7 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
         ? (kelas.prodi.jurusan.name ?? "-").toString()
         : "-";
 
-    // 3. Handle data Semester (Konversi angka ke teks Ganjil/Genap jika diperlukan)
+    // 3. Handle data Semester
     final String semesterRaw = (kelas.semester ?? "-").toString();
     String semesterFormatted = semesterRaw;
     if (semesterRaw.toLowerCase() == "genap" ||
@@ -51,11 +55,10 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
       }
     }
 
-    // 4. Handle Format Tahun Akademik dari objek Map/Class tahun_akademik
+    // 4. Handle Format Tahun Akademik
     String tahunAkademikFormatted = "-";
     if (kelas.tahunAkademik != null) {
       try {
-        // Menggabungkan tahun_awal/tahun_akhir atau nama jika tersedia
         final String thnAwal = kelas.tahunAkademik.tahunAwal != null
             ? DateTime.parse(
                 kelas.tahunAkademik.tahunAwal.toString(),
@@ -78,9 +81,15 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
       }
     }
 
-    // 5. Ambil list Mahasiswa
-    final List<dynamic> listMahasiswa = kelas.mahasiswa ?? [];
-    final String totalMahasiswaText = "${listMahasiswa.length} Mahasiswa";
+    // 5. Ambil total list asli Mahasiswa dari parameter model
+    final List<dynamic> listMahasiswaSemua = kelas.mahasiswa ?? [];
+    final String totalMahasiswaText = "${listMahasiswaSemua.length} Mahasiswa";
+
+    // 6. Potong data secara lokal berdasarkan batas limit halaman saat ini (_currentLimit)
+    final List<dynamic> listMahasiswaTampil = listMahasiswaSemua
+        .take(_currentLimit)
+        .toList();
+    final bool masihAdaSisaData = listMahasiswaSemua.length > _currentLimit;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
@@ -191,12 +200,14 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
             const SizedBox(height: 24),
 
             // --- KARTU 2: INFORMASI MAHASISWA ---
-            _buildSectionHeader("Informasi Mahasiswa"),
+            _buildSectionHeader(
+              "Informasi Mahasiswa (Menampilkan ${listMahasiswaTampil.length} dari ${listMahasiswaSemua.length})",
+            ),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: _buildBoxDecoration(),
-              child: listMahasiswa.isEmpty
+              child: listMahasiswaSemua.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Center(
@@ -209,21 +220,50 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
                         ),
                       ),
                     )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: listMahasiswa.length,
-                      separatorBuilder: (context, index) => _buildCardDivider(),
-                      itemBuilder: (context, index) {
-                        final mhs = listMahasiswa[index];
+                  : Column(
+                      children: [
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: listMahasiswaTampil.length,
+                          separatorBuilder: (context, index) =>
+                              _buildCardDivider(),
+                          itemBuilder: (context, index) {
+                            final mhs = listMahasiswaTampil[index];
+                            final String studentName = (mhs.name ?? "-")
+                                .toString();
+                            final String studentEmail = (mhs.email ?? "-")
+                                .toString();
 
-                        // Ekstraksi data mahasiswa sesuai dengan Response API baru
-                        final String studentName = (mhs.name ?? "-").toString();
-                        final String studentEmail = (mhs.email ?? "-")
-                            .toString();
+                            return _buildStudentRow(studentName, studentEmail);
+                          },
+                        ),
 
-                        return _buildStudentRow(studentName, studentEmail);
-                      },
+                        // SEPARATOR & BUTTON LOAD MORE (Hanya muncul jika item melebihi limit tampilan)
+                        if (masihAdaSisaData) ...[
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _currentLimit +=
+                                    _perPage; // Tambah limit tampilan 20 baris lagi
+                              });
+                            },
+                            icon: const Icon(
+                              Icons.expand_more,
+                              color: AppColors.primaryColor,
+                            ),
+                            label: Text(
+                              "Muat Lebih Banyak",
+                              style: GoogleFonts.poppins(
+                                color: AppColors.primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
             ),
             const SizedBox(height: 24),
@@ -239,8 +279,7 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
                         Navigator.pushNamed(
                           context,
                           "/kelas-edit",
-                          arguments:
-                              kelas, 
+                          arguments: kelas,
                         );
                       },
                       icon: const Icon(
@@ -338,7 +377,11 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
         bottomRight: Radius.circular(8),
       ),
       boxShadow: [
-        BoxShadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 2)),
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 6,
+          offset: Offset(0, 2),
+        ), // Sedikit dihaluskan dari warna murni hitam agar bersih
       ],
     );
   }
@@ -391,8 +434,7 @@ class _DetailKelasScreenState extends State<DetailKelasScreen> {
             email,
             style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
             textAlign: TextAlign.end,
-            overflow: TextOverflow
-                .ellipsis, // Mencegah crash overflow jika email terlalu panjang
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

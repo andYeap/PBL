@@ -1,31 +1,41 @@
-import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/khs_model.dart';
-import 'api_client.dart';
+import '../utils/token_manager.dart';
 
 class KhsService {
-  final Dio _dio = ApiClient().dio;
+  final Dio _dio = Dio();
 
-  Future<List<Khs>> fetchKhs({String? mahasiswaId}) async {
+  final String _baseUrl =
+      dotenv.env['KELOMPOK_1_BASE_URL'] ?? 'https://be.karlearn.site';
+
+  Future<List<KhsData>> fetchAllKhs() async {
     try {
-      final Map<String, dynamic> queryParams = {};
-      if (mahasiswaId != null) {
-        queryParams['mahasiswa_id'] = mahasiswaId;
-      }
+      String? token = await TokenManager.getAccessToken();
 
+      // Endpoint diarahkan ke baseUrl/api/khs
       final response = await _dio.get(
-        "/api/khs/",
-        queryParameters: queryParams,
+        '$_baseUrl/api/khs',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
       );
 
-      if (response.statusCode == 200 && response.data["success"] == true) {
-        final List<dynamic> data = response.data["data"];
-        return data.map((item) => Khs.fromJson(item)).toList();
+      if (response.statusCode == 200) {
+        final khsResponse = KhsResponse.fromJson(response.data);
+        return khsResponse.data;
       }
       return [];
-    } catch (e) {
-      debugPrint("Error fetching KHS data: $e");
-      return [];
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(
+          "Gagal mengambil data KHS: ${e.response?.data['message'] ?? e.message}",
+        );
+      }
+      throw Exception("Koneksi ke server bermasalah.");
     }
   }
 }

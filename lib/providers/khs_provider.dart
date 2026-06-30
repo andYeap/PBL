@@ -5,42 +5,52 @@ import '../services/khs_service.dart';
 class KhsProvider with ChangeNotifier {
   final KhsService _khsService = KhsService();
 
+  List<KhsData> _allKhsData = [];
   bool _isLoading = false;
-  List<Khs> _listKhs = [];
-  Khs? _selectedKhs;
+  String _errorMessage = '';
 
-  // Getter
+  List<KhsData> get allKhsData => _allKhsData;
   bool get isLoading => _isLoading;
-  List<Khs> get listKhs => _listKhs;
-  Khs? get selectedKhs => _selectedKhs;
+  String get errorMessage => _errorMessage;
 
-  // Setter untuk memilih KHS tertentu di UI (jika diperlukan)
-  void setSelectedKhs(Khs? khs) {
-    _selectedKhs = khs;
-    notifyListeners();
-  }
+  // State navigasi alur KHS yang sedang dipilih
+  String? selectedProdi;
+  String? selectedKelas;
+  KhsData? selectedKhsData;
 
-  /// Fungsi untuk memuat data KHS dari Service ke Provider
-  Future<void> fetchKhsData({String? mahasiswaId}) async {
+  Future<void> loadKhsData() async {
     _isLoading = true;
+    _errorMessage = '';
     notifyListeners();
 
     try {
-      _listKhs = await _khsService.fetchKhs(mahasiswaId: mahasiswaId);
-
-      // Jika data berhasil diambil dan tidak kosong, set data pertama sebagai default pilihan
-      if (_listKhs.isNotEmpty) {
-        _selectedKhs = _listKhs.first;
-      } else {
-        _selectedKhs = null;
-      }
+      _allKhsData = await _khsService.fetchAllKhs();
     } catch (e) {
-      debugPrint("Error compiling KHS provider data: $e");
-      _listKhs = [];
-      _selectedKhs = null;
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
 
-    _isLoading = false;
-    notifyListeners();
+  // Mendapatkan daftar Prodi unik berdasarkan data KHS yang masuk
+  List<String> get uniqueProdis {
+    return _allKhsData.map((e) => e.prodiName).toSet().toList();
+  }
+
+  // Mendapatkan daftar Kelas unik di bawah Prodi tertentu
+  List<String> getUniqueKelasByProdi(String prodiName) {
+    return _allKhsData
+        .where((e) => e.prodiName == prodiName)
+        .map((e) => e.kelasName)
+        .toSet()
+        .toList();
+  }
+
+  // Mendapatkan daftar mahasiswa di dalam kombinasi Prodi dan Kelas tertentu
+  List<KhsData> getMahasiswaByKelas(String prodiName, String kelasName) {
+    return _allKhsData
+        .where((e) => e.prodiName == prodiName && e.kelasName == kelasName)
+        .toList();
   }
 }

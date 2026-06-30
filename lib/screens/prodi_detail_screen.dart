@@ -6,6 +6,20 @@ import '../providers/prodi_provider.dart';
 class ProdiDetailScreen extends StatelessWidget {
   const ProdiDetailScreen({super.key});
 
+  // Fungsi helper untuk menghilangkan '-' dan membuat huruf pertama kapital
+  String _formatText(String text) {
+    if (text.isEmpty) return text;
+    return text
+        .replaceAll('-', ' ')
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+              : '',
+        )
+        .join(' ');
+  }
+
   void _showDeleteDialog(BuildContext context, ProdiProvider provider) {
     showDialog(
       context: context,
@@ -215,9 +229,12 @@ class ProdiDetailScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        _buildInfoRow("Prodi", prodi.nama),
+                        _buildInfoRow("Prodi", _formatText(prodi.nama)),
                         const Divider(height: 20),
-                        _buildInfoRow("Jurusan", prodi.jurusanNama),
+                        _buildInfoRow(
+                          "Jurusan",
+                          _formatText(prodi.jurusanNama),
+                        ),
                         const Divider(height: 20),
                         _buildInfoRow("Jenjang", prodi.jenjang),
                       ],

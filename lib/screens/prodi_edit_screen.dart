@@ -15,11 +15,29 @@ class _ProdiEditScreenState extends State<ProdiEditScreen> {
   late TextEditingController _nameController;
   String _selectedJenjang = "D3";
 
+  // Fungsi helper untuk menghilangkan '-' dan membuat huruf pertama kapital
+  String _formatText(String text) {
+    if (text.isEmpty) return text;
+    return text
+        .replaceAll('-', ' ')
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+              : '',
+        )
+        .join(' ');
+  }
+
   @override
   void initState() {
     super.initState();
     final prodi = context.read<ProdiProvider>().selectedProdi;
-    _nameController = TextEditingController(text: prodi?.nama ?? '');
+
+    // Teks diformat rapi saat pertama kali dimasukkan ke input form
+    _nameController = TextEditingController(
+      text: _formatText(prodi?.nama ?? ''),
+    );
     _selectedJenjang = prodi?.jenjang ?? 'D3';
   }
 
@@ -193,7 +211,7 @@ class _ProdiEditScreenState extends State<ProdiEditScreen> {
                               border: Border.all(color: Colors.black12),
                             ),
                             child: Text(
-                              prodi?.jurusanNama ?? '',
+                              _formatText(prodi?.jurusanNama ?? ''),
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 color: Colors.black54,

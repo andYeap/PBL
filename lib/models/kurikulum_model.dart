@@ -1,5 +1,18 @@
 import 'mata_kuliah_model.dart';
 
+// Helper function untuk mengubah "teknik-informatika" menjadi "Teknik Informatika"
+String _convertToTitleCase(String text) {
+  if (text.isEmpty) return '';
+  String spacingText = text.replaceAll(RegExp(r'[-_]'), ' ');
+  return spacingText
+      .split(' ')
+      .map((word) {
+        if (word.isEmpty) return '';
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+      })
+      .join(' ');
+}
+
 class KurikulumJurusan {
   final int id;
   final String name;
@@ -7,7 +20,11 @@ class KurikulumJurusan {
   KurikulumJurusan({required this.id, required this.name});
 
   factory KurikulumJurusan.fromJson(Map<String, dynamic> json) {
-    return KurikulumJurusan(id: json['id'] ?? 0, name: json['name'] ?? '');
+    String rawName = json['name'] ?? '';
+    return KurikulumJurusan(
+      id: json['id'] ?? 0,
+      name: _convertToTitleCase(rawName), // Format di sini
+    );
   }
 }
 
@@ -25,9 +42,10 @@ class KurikulumProdi {
   });
 
   factory KurikulumProdi.fromJson(Map<String, dynamic> json) {
+    String rawName = json['name'] ?? '';
     return KurikulumProdi(
       id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      name: _convertToTitleCase(rawName), // Format di sini
       jenjang: json['jenjang'] ?? '',
       jurusan: KurikulumJurusan.fromJson(json['jurusan'] ?? {}),
     );
@@ -37,7 +55,7 @@ class KurikulumProdi {
 class KurikulumMk {
   final int semester;
   final bool wajib;
-  final MataKuliah mataKuliah; // Ganti dengan model MataKuliah Anda
+  final MataKuliah mataKuliah;
 
   KurikulumMk({
     required this.semester,

@@ -8,7 +8,7 @@ class Kelas {
   final int semester;
   final TahunAkademik? tahunAkademik;
   final KurikulumProdi? prodi;
-  final KurikulumModel? kurikulum; // Ubah dari Kurikulum menjadi KurikulumModel
+  final KurikulumModel? kurikulum; 
   final List<Mahasiswa> mahasiswa;
 
   Kelas({
